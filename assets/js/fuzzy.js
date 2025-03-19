@@ -1,62 +1,72 @@
 'use strict'
 
 document.addEventListener('DOMContentLoaded', () => {
-
-  let background_color = 'black'
-  let color = 'white'
-  /* Do we have a selected menu item (not if we're viewing the welcome screen. */
-  let lit_menu_item = document.querySelector(
-    'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu li a.wp-menu-open')
-  if (lit_menu_item) {
-    const style = window.getComputedStyle(lit_menu_item)
-    color = style.getPropertyValue('color')
-    background_color = style.getPropertyValue('background-color')
-  } else {
-    lit_menu_item = document.querySelector(
-      'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu li a')
-    let style = window.getComputedStyle(lit_menu_item)
-    color = style.getPropertyValue('color')
-    lit_menu_item = document.querySelector(
-      'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu')
-    style = window.getComputedStyle(lit_menu_item)
-    background_color = style.getPropertyValue('background-color')
-  }
-
-  const css = document.createElement('style')
-  css.textContent = `html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper.ui-state-active {
-    background-color: ${background_color}; color: ${color};}`
-  const head = document.head || document.getElementsByTagName('head')[0]
-  head.appendChild(css)
+  retrieve_preferred_style()
 
   const menu_items = scrape_menu()
   const search_box = make_search_box()
 
-  let selected_menu_item = null
+  /*
+   * <shift><shift> within 500 ms puts us into search box.
+   * <esc> gets us out again.
+   */
+  let previous_focus_element = false
+  let previous_shift_time = false
+  document.addEventListener('keydown', event => {
+    if ('Shift' === event.key) {
+      const now = Date.now()
+      if (previous_shift_time && (now - previous_shift_time) < 500) {
+        previous_shift_time = false
+        previous_focus_element = document.activeElement
+        search_box.focus()
+      } else {
+        previous_shift_time = now
+      }
+    } else {
+      previous_shift_time = false
+    }
+    if ('Escape' === event.key) {
+      if (previous_focus_element) {
+        if (search_box.classList.contains('active')) {
+          event.target.classList.add('inactive')
+          event.target.classList.remove('active')
+          previous_focus_element.focus()
+        }
+        previous_focus_element = false
+      }
+    }
+  })
+
+  search_box.parentElement.addEventListener('click', event => {
+      search_box.focus()
+    }
+  )
+  search_box.addEventListener('focus', event => {
+    activate(event, true)
+    event.target.select()
+  })
+  search_box.addEventListener('blur', event => {
+    const target = event.target
+    activate(event, false)
+  })
 
   jQuery(search_box).autocomplete({
     minLength: 0,
+    delay: 0,
     autoFocus: true,
     source: menu_items,
 
-    select: function (event, menu_item) {
+    select: (event, menu_item) => {
       document.location = menu_item.item.link
+    },
+    open: (event, menu_item) => {
+      activate(event, true)
+    },
+    close: (event, menu_item) => {
+      activate(event, false)
     },
 
   })
-    .data('ui-autocomplete')._hack_hackrenderItem =
-    function (menu_parent, menu_item) {
-      const cls = (selected_menu_item && selected_menu_item.label === menu_item.label) ? 'active' : 'inactive'
-
-      const li_item = jQuery('<li/>')
-        .data('ui-autocomplete-item', menu_item.label)
-        .addClass(cls)
-        .append(menu_item.label)
-
-      li_item.appendTo(menu_parent)
-      console.log('rendered ' + menu_item.label + ' with ' + cls)
-
-      return li_item
-    }
 
   /**
    * Scrape the WordPress administrator menus.
@@ -126,6 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const con = document.createElement('li')
     con.id = 'fuzzy-container'
     con.class = 'menu-top'
+    inp.dataset.description = '<shift><shift> to activate'
+    inp.title = inp.dataset.description
     con.appendChild(inp)
 
     const menu = document.querySelector('#adminmenu')
@@ -133,5 +145,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return inp
   }
+
+  function retrieve_preferred_style () {
+    let background_color = 'black'
+    let color = 'white'
+    /* Do we have a selected menu item (not if we're viewing the welcome screen. */
+    let lit_menu_item = document.querySelector(
+      'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu li a.wp-menu-open')
+    if (lit_menu_item) {
+      const style = window.getComputedStyle(lit_menu_item)
+      color = style.getPropertyValue('color')
+      background_color = style.getPropertyValue('background-color')
+    } else {
+      lit_menu_item = document.querySelector(
+        'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu li a')
+      let style = window.getComputedStyle(lit_menu_item)
+      color = style.getPropertyValue('color')
+      lit_menu_item = document.querySelector(
+        'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu')
+      style = window.getComputedStyle(lit_menu_item)
+      background_color = style.getPropertyValue('background-color')
+    }
+
+    const css = document.createElement('style')
+    css.textContent = `html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper.ui-state-active {
+    background-color: ${background_color}; color: ${color};}`
+    const head = document.head || document.getElementsByTagName('head')[0]
+    head.appendChild(css)
+  }
+
+  function activate (event, active) {
+    event.target.classList.add(active ? 'active' : 'inactive')
+    event.target.classList.remove(!active ? 'active' : 'inactive')
+  }
+
+
 
 })

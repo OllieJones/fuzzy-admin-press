@@ -19,7 +19,19 @@
     width: 100%;
     text-indent: 26px;
     margin: 10px auto 10px auto;
-    border-width: 2px;
-    border-radius: 6px;
+}
+
+html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper.ui-state-active {
+/ / HACK HACK this is to remember the selector for stuff in the menu
+}
+
+html ul.ui-menu.ui-autocomplete.ui-front,
+#fuzzy-field.active {
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: #c22;
+    min-width: 22em;
+    box-shadow: 0 0 2px 2px rgb(54, 59, 63);
+    background: #fff;
 }
 
