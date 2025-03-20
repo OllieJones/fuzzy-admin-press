@@ -1,43 +1,42 @@
 'use strict'
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    define_mixins()
+
     retrieve_preferred_style()
 
     const menu_items = scrape_menu()
+    let previous_focus_element = false
+    let previous_shift_time = false
+
     const search_box = make_search_box()
+    if (search_box) {
 
-    shift_shift()
+      shift_shift()
 
-    search_box.parentElement.addEventListener('click', event => {
-        search_box.focus()
-      }
-    )
-    search_box.addEventListener('focus', event => {
-      activate(event, true)
-      event.target.select()
-    })
-    search_box.addEventListener('blur', event => {
-      const target = event.target
-      activate(event, false)
-    })
+      jQuery(search_box).autocomplete({
+        minLength: 0,
+        delay: 0,
+        autoFocus: true,
+        source: menu_items,
 
-    jQuery(search_box).autocomplete({
-      minLength: 0,
-      delay: 0,
-      autoFocus: true,
-      source: menu_items,
+        select: (event, menu_item) => {
+          document.location = menu_item.item.link
+        },
+        open: (event, menu_item) => {
+          activate(event, true)
+        },
+        close: (event, menu_item) => {
+          activate(event, false)
+          if (previous_focus_element) {
+            previous_focus_element.focus()
+            previous_focus_element = null
+          }
+        },
 
-      select: (event, menu_item) => {
-        document.location = menu_item.item.link
-      },
-      open: (event, menu_item) => {
-        activate(event, true)
-      },
-      close: (event, menu_item) => {
-        activate(event, false)
-      },
-
-    })
+      })
+    }
 
     /**
      * Scrape the WordPress administrator menus.
@@ -54,10 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (menu.id) {
           case 'wp-admin-bar-menu-toggle':
           case 'wp-admin-bar-wp-logo':
+          case 'wp-admin-bar-comments':
             do_top = false
             do_sub = false
             break
           case 'wp-admin-bar-site-name':
+          case 'wp-admin-bar-my-account':
             do_top = false
             do_sub = true
             break
@@ -65,6 +66,40 @@ document.addEventListener('DOMContentLoaded', () => {
             do_top = true
             do_sub = true
         }
+        let top_item = null
+        let sub_items = []
+        let head_title = null
+        const link_element = menu.querySelector('a')
+        if (do_top && link_element) {
+          const link = link_element.getAttribute('href')
+          const label = link_element.innerText || null
+          head_title = label
+          top_item = label && link ? { label, link, nest_level: 1 } : null
+        }
+        if (do_sub) {
+          const submenus = menu.querySelectorAll('ul li')
+          for (const submenu of submenus) {
+            const sub_title = []
+            sub_title.push_only_string(head_title)
+            const link_element = submenu.querySelector('a')
+            if (link_element) {
+              const link = link_element.getAttribute('href')
+              const name = link_element.ownText()
+              sub_title.push_only_string(name)
+              if (name && link) {
+                sub_items.push({ label: sub_title.join(' > '), link, nest_level: 2 })
+              }
+            }
+
+          }
+        }
+        /* Suppress the top item if it duplicates the first sub item */
+        if (top_item && sub_items.length > 0 && sub_items[0] && top_item.link === sub_items[0].link) {
+          top_item = null
+        }
+        top_item && menu_items.push(top_item)
+        sub_items.map(sub_item => sub_item && menu_items.push(sub_item))
+
       }
 
       const menus = document.querySelectorAll(
@@ -75,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const link_element = menu.querySelector('a')
         if (link_element) {
           const link = link_element.getAttribute('href')
-          const label = link_element.querySelector('div.wp-menu-name')?.innerText || null
+          const label = link_element.querySelector('div.wp-menu-name')?.ownText() || null
           const icon_element = link_element.querySelector('div.wp-menu-image')
           const icon_classes = icon_element ? icon_element.classList.values() : []
           const icon = icon_classes.find(cl => cl.startsWith('dashicons-') && !cl.startsWith('dashicons-before')) || null
@@ -86,12 +121,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const submenus = menu.querySelectorAll('ul li')
           for (const submenu of submenus) {
             if (submenu.classList.contains('wp-submenu-head')) {
-              head_title = submenu.innerText || head_title
+              head_title = submenu.ownText() || head_title
             } else {
               const link_element = submenu.querySelector('a')
               if (link_element) {
                 const link = link_element.getAttribute('href')
-                const name = ownText(link_element)
+                const name = link_element.ownText()
                 if (name && link) {
                   sub_items.push({ label: head_title + ' > ' + name, link, nest_level: 2 })
                 }
@@ -111,18 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Like .innerText but excluding subelements.
-     *
-     * @param element
-     * @returns string
-     */
-    function ownText (element) {
-      return Array.prototype.reduce.call(element.childNodes, (acc, el) => {
-        return acc + (3 === el.nodeType ? el.textContent : '')
-      }, '')
-    }
-
-    /**
      * Create the search box
      * @returns {HTMLInputElement} The input element.
      */
@@ -130,7 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const inp = document.createElement('input')
       inp.type = 'text'
       inp.class = 'wp-ui-text-primary'
-      inp.placeholder = 'Shift Shift Search'
+      inp.dataset.placeholder = 'Shift Shift Search'
+      inp.dataset.placeholder_active = 'Search Menus'
+      inp.placeholder = inp.dataset.placeholder
       inp.id = 'fuzzy-field'
 
       const con = document.createElement('li')
@@ -175,8 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function activate (event, active) {
-      event.target.classList.add(active ? 'active' : 'inactive')
-      event.target.classList.remove(!active ? 'active' : 'inactive')
+      const el = event.target
+      el.placeholder = active ? el.dataset.placeholder_active : el.dataset.placeholder
+      el.classList.add(active ? 'active' : 'inactive')
+      el.classList.remove(!active ? 'active' : 'inactive')
     }
 
     /**
@@ -185,36 +212,79 @@ document.addEventListener('DOMContentLoaded', () => {
      *
      *   //TODO deal with very narrow
      */
-    function shift_shift () {
-      let previous_focus_element = false
-      let previous_shift_time = false
+    function shift_shift (shift = 'Shift', esc = 'Escape', delay = 500) {
+      /* Performance-important handler here: this intercepts
+       * ALL keystrokes to pick up on shift-shift and escape.
+       * Please be careful to minimize the work it needs to do! */
       document.addEventListener('keydown', event => {
-        const focused = document.activeElement
-        if (focused !== search_box) {
-          if ('Shift' === event.key) {
-            const now = Date.now()
-            if (previous_shift_time && (now - previous_shift_time) < 500) {
-              previous_shift_time = false
-              previous_focus_element = focused
-              search_box.focus()
-            } else {
-              previous_shift_time = now
-            }
-          } else {
-            previous_shift_time = false
-          }
-        }
-        if ('Escape' === event.key) {
+        const key = event.key
+        if (esc === key) {
           if (previous_focus_element) {
             if (search_box.classList.contains('active')) {
-              event.target.classList.add('inactive')
-              event.target.classList.remove('active')
+              activate(event, false)
               previous_focus_element.focus()
             }
             previous_focus_element = false
           }
+          previous_shift_time = false
+        } else if (shift === key) {
+          const now = Date.now()
+          if (previous_shift_time && (now - previous_shift_time) < delay) {
+            const focus = document.activeElement
+            if (focus !== search_box) {
+              previous_focus_element = focus
+              search_box.focus()
+            }
+            previous_shift_time = false
+          } else {
+            previous_shift_time = now
+          }
+        } else {
+          /* Not shift, not esc */
+          previous_shift_time = false
         }
       })
+
+      search_box.parentElement.addEventListener('click', event => {
+          search_box.focus()
+        }
+      )
+      search_box.addEventListener('focus', event => {
+        activate(event, true)
+        event.target.select()
+      })
+      search_box.addEventListener('blur', event => {
+
+        activate(event, false)
+        if (previous_focus_element) {
+          previous_focus_element.focus()
+          previous_focus_element = false
+        }
+
+      })
+
+    }
+
+    function define_mixins () {
+      /**
+       * Like .innerText but excluding subelements.
+       *
+       * @returns string
+       */
+      HTMLElement.prototype.ownText = function () {
+        return Array.prototype.reduce.call(this.childNodes, (acc, el) => {
+          return acc + (3 === el.nodeType ? el.textContent : '')
+        }, '')
+      }
+      /**
+       * Push only if it's a nonempty string.
+       *
+       * @returns int The new length property of the object upon which the method was called.
+       */
+      Array.prototype.push_only_string = function (s) {
+        'string' === typeof s && s.length > 0 && this.push(s)
+        return this.length
+      }
     }
 
   }
