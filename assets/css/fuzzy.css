@@ -24,6 +24,10 @@
 html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper.ui-state-active {
 / / HACK HACK this is to remember the selector for stuff in the menu
 }
+html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper {
+    margin-top: -2.5px;
+    margin-bottom: -2.5px;
+}
 
 html ul.ui-menu.ui-autocomplete.ui-front,
 #fuzzy-field.active {
@@ -33,5 +37,7 @@ html ul.ui-menu.ui-autocomplete.ui-front,
     min-width: 22em;
     box-shadow: 0 0 2px 2px rgb(54, 59, 63);
     background: #fff;
+    z-index:20000
 }
+
 
