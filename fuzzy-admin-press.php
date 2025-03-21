@@ -23,9 +23,14 @@ function admin_init() {
 	load_plugin_textdomain( 'fuzzy-admin-press', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 
 	wp_enqueue_style( 'jquery-ui-autocomplete' );
-//hack hack	wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');
 	wp_enqueue_style( 'fuzzy-admin-press', plugin_dir_url( __FILE__ ) . 'assets/css/fuzzy.css' );
-	wp_enqueue_script( 'jquery-ui-autocomplete' );
 	wp_enqueue_script( 'fuzzy-admin-press', plugin_dir_url( __FILE__ ) . 'assets/js/fuzzy.js' , array('jquery-ui-autocomplete'));
+	$i18n = array (
+		/* translators: name of plugin to appear as the placeholder in the search box. */
+		'placeholder' => __('Shift Shift Search', 'fuzzy-admin-press'),
+		'placeholder_active' => implode (' ', array(__('Search'), __('Menus'))),
+	);
+
+	wp_localize_script('fuzzy-admin-press', 'fuzzy_admin_press_i18n', $i18n);
 }
 

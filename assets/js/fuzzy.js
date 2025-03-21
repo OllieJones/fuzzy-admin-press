@@ -153,8 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const inp = document.createElement('input')
       inp.type = 'text'
       inp.class = 'wp-ui-text-primary'
-      inp.dataset.placeholder = 'Shift Shift Search'
-      inp.dataset.placeholder_active = 'Search Menus'
+      inp.dataset.placeholder = fuzzy_admin_press_i18n.placeholder
+      inp.dataset.placeholder_active = fuzzy_admin_press_i18n.placeholder_active
       inp.placeholder = inp.dataset.placeholder
       inp.id = 'fuzzy-field'
 
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
       /* Performance-important handler here: this intercepts
        * ALL keystrokes to pick up on shift-shift and escape.
        * Please be careful to minimize the work it needs to do! */
-      document.addEventListener('keydown', event => {
+      document.addEventListener('keyup', event => {
         const key = event.key
         if (esc === key) {
           if (previous_focus_element) {
