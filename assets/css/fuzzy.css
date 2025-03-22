@@ -33,9 +33,7 @@ html ul.ui-menu.ui-autocomplete.ui-front,
 #fuzzy-field.active {
     border-width: 1px;
     border-radius: 3px;
-    border-color: #c22;
     min-width: 22em;
-    box-shadow: 0 0 2px 2px rgb(54, 59, 63);
     background: #fff;
     z-index:20000
 }

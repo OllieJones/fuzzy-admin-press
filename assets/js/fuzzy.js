@@ -2,9 +2,9 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  define_mixins()
+  const styles_cache = new Map()
 
-  retrieve_preferred_style()
+  define_mixins()
 
   const menu_items = scrape_menu().map(item => {
     item.normalized = item.label.normalize_for_search()
@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const search_box = make_search_box()
   if (search_box) {
 
+    do_matching_color_styles()
     shift_shift()
 
     jQuery(search_box).autocomplete({
@@ -36,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       open: (event, menu_item) => {
         activate(event, true)
+// hack hack        do_matching_color_styles()
+
       },
       close: (event, menu_item) => {
         activate(event, false)
@@ -179,32 +182,62 @@ document.addEventListener('DOMContentLoaded', () => {
     return inp
   }
 
-  function retrieve_preferred_style () {
-    let background_color = 'black'
-    let color = 'white'
-    /* Do we have a selected menu item (not if we're viewing the welcome screen. */
-    let lit_menu_item = document.querySelector(
-      'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu li a.wp-menu-open')
-    if (lit_menu_item) {
-      const style = window.getComputedStyle(lit_menu_item)
-      color = style.getPropertyValue('color')
-      background_color = style.getPropertyValue('background-color')
-    } else {
-      lit_menu_item = document.querySelector(
-        'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu li a')
-      let style = window.getComputedStyle(lit_menu_item)
-      color = style.getPropertyValue('color')
-      lit_menu_item = document.querySelector(
-        'body.wp-admin.js div#wpwrap div#adminmenumain div#adminmenuwrap ul#adminmenu')
-      style = window.getComputedStyle(lit_menu_item)
-      background_color = style.getPropertyValue('background-color')
-    }
+  function do_matching_color_styles () {
+    const highlight_color = get_color('ul#adminmenu li a.wp-menu-open', 'background-color')
+      || get_color('ul#adminmenu', 'background-color')
+      || 'green'
+    const background_color = get_color('ul#adminmenu li a.wp-menu-open', 'color')
+      || get_color('ul#adminmenu li a', 'color')
+      || 'blue'
+    const shadow_color = get_color('ul#adminmenu', 'background-color')
+      || 'purple'
+    set_style('html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper.ui-state-active',
+      { background_color: highlight_color, color: background_color }, 'fuzzy-state-active')
+    set_style(['html ul.ui-menu.ui-autocomplete.ui-front', '#fuzzy-field.active'],
+      { box_shadow: `0 0 2px 2px ${shadow_color}`, border_color: highlight_color },
+      'fuzzy-state-shadow')
+  }
 
-    const css = document.createElement('style')
-    css.textContent = `html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper.ui-state-active {
-    background-color: ${background_color}; color: ${color};}`
-    const head = document.head || document.getElementsByTagName('head')[0]
-    head.appendChild(css)
+  function set_style (selectors, attributes, id) {
+    let existing = true
+    let css = document.getElementById(id)
+    if (!css) {
+      existing = false
+      css = document.createElement('style')
+      css.id = id
+    }
+    selectors = typeof selectors === 'string' ? selectors : selectors.join(',')
+    const text = Object.keys(attributes).reduce((text, attribute) => {
+      const name = attribute.replace(/_/g, '-')
+      return `${text}${name}: ${attributes[attribute]};`
+    }, '')
+
+    css.textContent = `${selectors}{${text}}`
+
+    if (!existing) {
+      const head = document.head || document.getElementsByTagName('head')[0]
+      head.appendChild(css)
+    }
+  }
+
+  function get_color (selector, attribute, root = document) {
+    let style
+    if (styles_cache.has(selector)) {
+      style = styles_cache.get(selector)
+    } else {
+
+      const element = root.querySelector(selector)
+      if (!element) {
+        return false
+      }
+      style = window.getComputedStyle(element)
+      styles_cache.set(selector, style)
+    }
+    if (!style) {
+      return false
+    }
+    const result = style.getPropertyValue(attribute)
+    return typeof result === 'string' && result.length > 0 ? result : false
   }
 
   function activate (event, active) {
@@ -300,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {string} The input downcased without diacritical marks.
      */
     String.prototype.normalize_for_search = function () {
-      return this.normalize("NFD").replace(/\p{Diacritic}/gu, '').toLocaleLowerCase(locales)
+      return this.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase(locales)
     }
   }
 
@@ -311,14 +344,15 @@ document.addEventListener('DOMContentLoaded', () => {
    *
    * @returns {string[]}
    */
-  function get_locales(locale ) {
-    function get(locale) {
+  function get_locales (locale) {
+    function get (locale) {
       try {
         return Intl.getCanonicalLocales(locale)
       } catch {
-        return false;
+        return false
       }
     }
+
     return get(locale.replace(/_/g, '-'))
       || get(locale)
       || get(locale.slice(0, 2))
