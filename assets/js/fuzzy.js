@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * Scrape the WordPress administrator menus.
    * @returns {*[]} An array of {name, link, icon, level}
    */
-  function scrape_menu () {
+  function scrape_menu() {
     const menu_items = []
     const quicklinks = document.querySelectorAll(
       'body.wp-admin.js div#wpwrap div#wpadminbar div#wp-toolbar > ul > li')
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const link = link_element.getAttribute('href')
         const label = link_element.innerText || null
         head_title = label
-        top_item = label && link ? { label, link, nest_level: 1 } : null
+        top_item = label && link ? {label, link, nest_level: 1} : null
       }
       if (do_sub) {
         const submenus = menu.querySelectorAll('ul li')
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = link_element.ownText()
             sub_title.push_only_string(name)
             if (name && link) {
-              sub_items.push({ label: sub_title.join(fuzzy_admin_press_i18n.submenu_delimiter), link, nest_level: 2 })
+              sub_items.push({label: sub_title.join(fuzzy_admin_press_i18n.submenu_delimiter), link, nest_level: 2})
             }
           }
         }
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (link_element) {
         const link = link_element.getAttribute('href')
         const label = link_element.querySelector('div.wp-menu-name')?.ownText() || null
-        top_item = label && link ? { label, link, nest_level: 1 } : null
+        top_item = label && link ? {label, link, nest_level: 1} : null
       }
       if (menu.classList.contains('wp-has-submenu')) {
         let head_title = ''
@@ -138,10 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
               const link = link_element.getAttribute('href')
               const name = link_element.ownText()
               if (name && link) {
-				  const title = []
-				  title.push(head_title)
-				  title.push(name)
-                sub_items.push({ label: title.join(fuzzy_admin_press_i18n.submenu_delimiter), link, nest_level: 2 })
+                const title = []
+                title.push(head_title)
+                title.push(name)
+                sub_items.push({label: title.join(fuzzy_admin_press_i18n.submenu_delimiter), link, nest_level: 2})
               }
             }
           }
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * Create the search box
    * @returns {HTMLInputElement} The input element.
    */
-  function make_search_box () {
+  function make_search_box() {
     const inp = document.createElement('input')
     inp.type = 'text'
     inp.class = 'wp-ui-text-primary'
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return inp
   }
 
-  function do_matching_color_styles () {
+  function do_matching_color_styles() {
     const highlight_color = get_color('ul#adminmenu li a.wp-menu-open', 'background-color')
       || get_color('ul#adminmenu', 'background-color')
       || 'green'
@@ -194,13 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const shadow_color = get_color('ul#adminmenu', 'background-color')
       || 'purple'
     set_style('html ul.ui-menu.ui-autocomplete.ui-front > li.ui-menu-item > div.ui-menu-item-wrapper.ui-state-active',
-      { background_color: highlight_color, color: background_color }, 'fuzzy-state-active')
+      {background_color: highlight_color, color: background_color}, 'fuzzy-state-active')
     set_style(['html ul.ui-menu.ui-autocomplete.ui-front', '#fuzzy-field.active'],
-      { box_shadow: `0 0 2px 2px ${shadow_color}`, border_color: highlight_color },
+      {box_shadow: `0 0 2px 2px ${shadow_color}`, border_color: highlight_color},
       'fuzzy-state-shadow')
   }
 
-  function set_style (selectors, attributes, id) {
+  function set_style(selectors, attributes, id) {
     let existing = true
     let css = document.getElementById(id)
     if (!css) {
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function get_color (selector, attribute, root = document) {
+  function get_color(selector, attribute, root = document) {
     let style
     if (styles_cache.has(selector)) {
       style = styles_cache.get(selector)
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return typeof result === 'string' && result.length > 0 ? result : false
   }
 
-  function activate (event, active) {
+  function activate(event, active) {
     const el = event.target
     el.placeholder = active ? el.dataset.placeholder_active : el.dataset.placeholder
     el.classList.add(active ? 'active' : 'inactive')
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
    *
    *   //TODO deal with very narrow
    */
-  function shift_shift (shift = 'Shift', esc = 'Escape', delay = 500) {
+  function shift_shift(shift = 'Shift', esc = 'Escape', delay = 500) {
     /* Performance-important handler here: this intercepts
      * ALL keystrokes to pick up on shift-shift and escape.
      * Please be careful to minimize the work it needs to do! */
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   }
 
-  function define_mixins () {
+  function define_mixins() {
     /**
      * Like .innerText but excluding subelements.
      *
@@ -336,12 +336,12 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     String.prototype.normalize_for_search = function () {
       return this
-		  .trim()
-		  .replace(fuzzy_admin_press_i18n.submenu_delimiter, ' ')
-		  .normalize('NFD')
-		  .replace(/\p{Diacritic}/gu, '')
-		  .replace(/\s+/g, ' ')
-		  .toLocaleLowerCase(locales)
+        .trim()
+        .replace(fuzzy_admin_press_i18n.submenu_delimiter, ' ')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/\s+/g, ' ')
+        .toLocaleLowerCase(locales)
     }
   }
 
@@ -352,8 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
    *
    * @returns {string[]}
    */
-  function get_locales (locale) {
-    function get (locale) {
+  function get_locales(locale) {
+    function get(locale) {
       try {
         return Intl.getCanonicalLocales(locale)
       } catch {
