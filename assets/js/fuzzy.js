@@ -101,10 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = link_element.ownText()
             sub_title.push_only_string(name)
             if (name && link) {
-              sub_items.push({ label: sub_title.join(' > '), link, nest_level: 2 })
+              sub_items.push({ label: sub_title.join(fuzzy_admin_press_i18n.submenu_delimiter), link, nest_level: 2 })
             }
           }
-
         }
       }
       /* Suppress the top item if it duplicates the first sub item */
@@ -139,7 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
               const link = link_element.getAttribute('href')
               const name = link_element.ownText()
               if (name && link) {
-                sub_items.push({ label: head_title + ' > ' + name, link, nest_level: 2 })
+				  const title = []
+				  title.push(head_title)
+				  title.push(name)
+                sub_items.push({ label: title.join(fuzzy_admin_press_i18n.submenu_delimiter), link, nest_level: 2 })
               }
             }
           }
@@ -333,7 +335,13 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {string} The input downcased without diacritical marks.
      */
     String.prototype.normalize_for_search = function () {
-      return this.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase(locales)
+      return this
+		  .trim()
+		  .replace(fuzzy_admin_press_i18n.submenu_delimiter, ' ')
+		  .normalize('NFD')
+		  .replace(/\p{Diacritic}/gu, '')
+		  .replace(/\s+/g, ' ')
+		  .toLocaleLowerCase(locales)
     }
   }
 
