@@ -2,6 +2,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  const locales = get_locales(fuzzy_admin_press_i18n.locale)
+
   const styles_cache = new Map()
 
   define_mixins()
@@ -156,6 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return menu_items
   }
   function dedup_menu_items(raw_items) {
+    /* Map each URL to an array of labels. Most of those arrays nave just one element.
+     * We care about the ones with more than one elementl; they are the dups.     */
     const urlmap = new Map()
     for (const item of raw_items) {
       const url = new URL(item.link, document.location).toString()
@@ -164,12 +168,30 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       urlmap.get(url).push(item.label)
     }
+    /* Work out which labels to remove. */
     const labels_to_remove = new Set()
     for (const key of urlmap.keys()) {
       /* Duplicate links? Keep the last one found */
-      urlmap.get(key).pop()
-      for (const label of urlmap.get(key)) {
-        labels_to_remove.add(label)
+      if (urlmap.get(key).length > 1) {
+        const labels = urlmap.get(key)
+        /* Sort the labels so the last one is the keeper */
+        labels.sort( (a,b) => {
+          const adelim = a.includes(fuzzy_admin_press_i18n.submenu_delimiter)
+          const bdelim = b.includes(fuzzy_admin_press_i18n.submenu_delimiter)
+          /* If just one has the delmiter, keep it. */
+          if (adelim === bdelim) {
+            if (a.length === b.length) {
+              return a.localeCompare(a,b, locales )
+            }
+            return a.length < b.length ? -1 : 1
+          }
+          return bdelim ? -1 : 1
+        })
+        /* take the last one. */
+        urlmap.get(key).pop()
+        for (const label of urlmap.get(key)) {
+          labels_to_remove.add(label)
+        }
       }
     }
     const menu_items = []
@@ -353,7 +375,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return this.length
     }
 
-    const locales = get_locales(fuzzy_admin_press_i18n.locale)
     /**
      * Normalizes a string for search.
      * @returns {string} The input downcased without diacritical marks.
