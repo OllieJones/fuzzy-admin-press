@@ -6,10 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   define_mixins()
 
-  const menu_items = scrape_menu().map(item => {
-    item.normalized = item.label.normalize_for_search()
-    return item
-  })
+  const menu_items = dedup_menu_items(scrape_menu())
+
   let previous_focus_element = false
   let previous_shift_time = false
 
@@ -156,6 +154,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
     return menu_items
+  }
+  function dedup_menu_items(raw_items) {
+    const urlmap = new Map()
+    for (const item of raw_items) {
+      const url = new URL(item.link, document.location).toString()
+      if (!urlmap.has(url)) {
+        urlmap.set(url, [])
+      }
+      urlmap.get(url).push(item.label)
+    }
+    const labels_to_remove = new Set()
+    for (const key of urlmap.keys()) {
+      /* Duplicate links? Keep the last one found */
+      urlmap.get(key).pop()
+      for (const label of urlmap.get(key)) {
+        labels_to_remove.add(label)
+      }
+    }
+    const menu_items = []
+    for (const item of raw_items) {
+      if (!labels_to_remove.has(item.label)) {
+        item.normalized = item.label.normalize_for_search()
+        menu_items.push(item)
+      }
+    }
+    return menu_items;
   }
 
   /**
