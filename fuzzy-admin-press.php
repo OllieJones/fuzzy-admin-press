@@ -18,7 +18,7 @@
 namespace FuzzyAdminPress;
 
 \add_action( 'admin_init', '\FuzzyAdminPress\admin_init', 10, 0 );
-\add_action( 'personal_options', '\FuzzyAdminPress\personal_options' ,10, 1 );
+\add_action( 'personal_options', '\FuzzyAdminPress\personal_options', 10, 1 );
 \add_action( 'personal_options_update', '\FuzzyAdminPress\save_personal_options' );
 \add_action( 'edit_user_profile_update', '\FuzzyAdminPress\save_personal_options' );
 
@@ -28,7 +28,7 @@ function admin_init() {
 
   load_plugin_textdomain( 'fuzzy-admin-press', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 
-  if ( get_searchable_menu_pref()) {
+  if ( get_searchable_menu_pref() ) {
     wp_enqueue_style( 'jquery-ui-autocomplete' );
     wp_enqueue_style( 'fuzzy-admin-press', plugin_dir_url( __FILE__ ) . 'assets/css/fuzzy.css', array(), $version, 'all' );
     wp_enqueue_script( 'fuzzy-admin-press', plugin_dir_url( __FILE__ ) . 'assets/js/fuzzy.js', array( 'jquery-ui-autocomplete' ), $version, true );
@@ -59,12 +59,12 @@ function get_searchable_menu_pref( $user = 0 ) {
 function personal_options( $profile_user ) {
   ?>
   <tr class="show-admin-bar user-admin-bar-front-wrap">
-    <th scope="row"><?php _e( 'Searchable Menus', 'fuzzy-admin-press' ); ?></th>
+    <th scope="row"><?php esc_html_e( 'Searchable Menus', 'fuzzy-admin-press' ); ?></th>
     <td>
       <label for="searchable_menus">
         <input name="searchable_menus" type="checkbox" id="searchable_menus"
                value="1"<?php checked( get_searchable_menu_pref( $profile_user->ID ) ); ?> />
-        <?php _e( 'Searchable aministration menus', 'fuzzy-admin-press' ); ?>
+        <?php esc_html_e( 'Searchable administration menus', 'fuzzy-admin-press' ); ?>
       </label><br/>
     </td>
   </tr>
@@ -73,14 +73,14 @@ function personal_options( $profile_user ) {
 
 
 function save_personal_options( $user_id ) {
-  if ( empty( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'update-user_' . $user_id ) ) {
+  if ( empty( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'update-user_' . $user_id ) ) {
     return;
   }
 
   if ( ! current_user_can( 'edit_user', $user_id ) ) {
     return;
   }
-  $menu = $_POST['searchable_menus'];
+  $menu = isset( $_POST['searchable_menus'] ) ? sanitize_text_field( wp_unslash( $_POST['searchable_menus'] ) ) : '0';
   $menu = '1' === $menu || 'on' === $menu ? 'true' : 'false';
 
   update_user_meta( $user_id, 'searchable_admin_menu', $menu );
